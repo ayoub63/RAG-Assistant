@@ -1,0 +1,6 @@
+Frankfurt University of Applied Sciences | Titel der Vorlesung | Name des/der Autors*in40 01.09.2025
+Observation: With RandomForestRegressor, RFE and Forward Selection achieved 
+slightly higher R² scores (~0.007 above other FSMs), though still below the baseline 
+(0.484).
+H4 : Wrapper-based FSMs may preserve feature combinations better suited to Random 
+Forest, resulting in slightly improved perf
