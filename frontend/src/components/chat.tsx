@@ -9,54 +9,57 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 
-export function CustomChat() {
-  const { image, uploadFile, reset, getAttachments } = useFile({
-    uploadAPI: 'http://localhost:8000/upload', // FastAPI upload endpoint
-  })
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+}
 
-  const sendMessage = async (message: string) => {
-    const userMsg = { role: 'user', content: message }
-    setMessages(prev => [...prev, userMsg])
+export function CustomChat() {
+  const [messages, setMessages] = useState<Message[]>([])
+
+  const sendMessage = async (msg: Message) => {
+    setMessages(prev => [...prev, msg])
 
     const res = await fetch('http://localhost:8000/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: message }),
+      body: JSON.stringify({ query: msg.content }),
     })
-
     const data = await res.json()
-    const aiMsg = { role: 'assistant', content: data.answer }
+
+    const aiMsg: Message = { role: 'assistant', content: data.answer }
     setMessages(prev => [...prev, aiMsg])
   }
+
+  const handler = {
+    messages,
+    sendMessage,
+  }
+
+  const { image, uploadFile, reset, getAttachments } = useFile({
+    uploadAPI: 'http://localhost:8000/upload',
+  })
 
   const attachments = getAttachments()
 
   return (
-    <ChatSection
-      handler={{ messages, sendMessage }}
-      className="h-screen overflow-hidden p-0 md:p-5"
-    >
+    <ChatSection handler={handler} className="h-screen overflow-hidden p-0 md:p-5">
       <CustomChatMessages messages={messages} />
-      <ChatInput
-        attachments={attachments}
-        resetUploadedFiles={reset}
-        onSubmit={sendMessage}
-      >
-        <div>
-          {image ? (
-            <img
-              className="max-h-[100px] object-contain"
-              src={image.url}
-              alt="uploaded"
-            />
-          ) : null}
-        </div>
-        <ChatInput.Form>
+      <ChatInput attachments={attachments} resetUploadedFiles={reset}>
+        {image ? (
+          <img className="max-h-[100px] object-contain" src={image.url} alt="uploaded" />
+        ) : null}
+        <ChatInput.Form
+          onSubmit={async (value: string) => {
+            await sendMessage({ role: 'user', content: value })
+          }}
+        >
           <ChatInput.Field />
           <ChatInput.Upload
             allowedExtensions={['jpg', 'png', 'jpeg']}
-            onUpload={async file => await uploadFile(file)}
+            onUpload={async (file) => {
+              await uploadFile(file) // ✅ must return void
+            }}
           />
           <ChatInput.Submit />
         </ChatInput.Form>
@@ -65,7 +68,7 @@ export function CustomChat() {
   )
 }
 
-function CustomChatMessages({ messages }) {
+function CustomChatMessages({ messages }: { messages: Message[] }) {
   return (
     <ChatMessages>
       <ChatMessages.List className="px-0 md:px-16">
@@ -91,9 +94,7 @@ function CustomChatMessages({ messages }) {
                   />
                 </ChatMessage.Avatar>
                 <ChatMessage.Content>
-                  <ChatMessage.Part.Markdown>
-                    {msg.content}
-                  </ChatMessage.Part.Markdown>
+                  <ChatMessage.Part.Markdown>{msg.content}</ChatMessage.Part.Markdown>
                 </ChatMessage.Content>
               </ChatMessage>
             </motion.div>
