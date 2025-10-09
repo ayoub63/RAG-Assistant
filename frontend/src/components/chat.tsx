@@ -23,7 +23,7 @@ export function CustomChat() {
       const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: msg.parts?.[0]?.text || "" }),
+        body: JSON.stringify({ query: msg.parts[0]|| "" }),
       });
 
       const data = await res.json();
