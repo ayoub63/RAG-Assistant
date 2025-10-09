@@ -1,104 +1,105 @@
-'use client'
-
 import {
-  ChatHandler,
-  ChatSection as ChatSectionUI,
-  Message,
+  ChatInput,
+  ChatMessage,
+  ChatMessages,
+  ChatSection,
+  useChatUI,
+  useFile,
 } from '@llamaindex/chat-ui'
-
-import '@llamaindex/chat-ui/styles/markdown.css'
-import '@llamaindex/chat-ui/styles/pdf.css'
-import '@llamaindex/chat-ui/styles/editor.css'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 
-const initialMessages: Message[] = [
-  {
-    id: '1',
-    parts: [{ type: 'text', text: 'Write simple Javascript hello world code' }],
-    role: 'user',
-  },
-  {
-    id: '2',
-    role: 'assistant',
-    parts: [
-      {
-        type: 'text',
-        text: 'Got it! Here\'s the simplest JavaScript code to print "Hello, World!" to the console:\n\n```javascript\nconsole.log("Hello, World!");\n```\n\nYou can run this code in any JavaScript environment, such as a web browser\'s console or a Node.js environment. Just paste the code and execute it to see the output.',
-      },
-    ],
-  },
-  {
-    id: '3',
-    parts: [{ type: 'text', text: 'Write a simple math equation' }],
-    role: 'user',
-  },
-  {
-    id: '4',
-    role: 'assistant',
-    parts: [
-      {
-        type: 'text',
-        text: "Let's explore a simple mathematical equation using LaTeX:\n\n The quadratic formula is: $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\n\nThis formula helps us solve quadratic equations in the form $ax^2 + bx + c = 0$. The solution gives us the x-values where the parabola intersects the x-axis.",
-      },
-    ],
-  },
-]
+export function CustomChat() {
+  const { image, uploadFile, reset, getAttachments } = useFile({
+    uploadAPI: 'http://localhost:8000/upload', // FastAPI upload endpoint
+  })
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
 
-export function ChatSection() {
-  // You can replace the handler with a useChat hook from Vercel AI SDK
-  const handler = useMockChat(initialMessages)
+  const sendMessage = async (message: string) => {
+    const userMsg = { role: 'user', content: message }
+    setMessages(prev => [...prev, userMsg])
+
+    const res = await fetch('http://localhost:8000/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: message }),
+    })
+
+    const data = await res.json()
+    const aiMsg = { role: 'assistant', content: data.answer }
+    setMessages(prev => [...prev, aiMsg])
+  }
+
+  const attachments = getAttachments()
+
   return (
-    <div className="flex max-h-[80vh] flex-col gap-6 overflow-y-auto">
-      <ChatSectionUI handler={handler} />
-    </div>
+    <ChatSection
+      handler={{ messages, sendMessage }}
+      className="h-screen overflow-hidden p-0 md:p-5"
+    >
+      <CustomChatMessages messages={messages} />
+      <ChatInput
+        attachments={attachments}
+        resetUploadedFiles={reset}
+        onSubmit={sendMessage}
+      >
+        <div>
+          {image ? (
+            <img
+              className="max-h-[100px] object-contain"
+              src={image.url}
+              alt="uploaded"
+            />
+          ) : null}
+        </div>
+        <ChatInput.Form>
+          <ChatInput.Field />
+          <ChatInput.Upload
+            allowedExtensions={['jpg', 'png', 'jpeg']}
+            onUpload={async file => await uploadFile(file)}
+          />
+          <ChatInput.Submit />
+        </ChatInput.Form>
+      </ChatInput>
+    </ChatSection>
   )
 }
 
-function useMockChat(initMessages: Message[]): ChatHandler {
-  const [messages, setMessages] = useState<Message[]>(initMessages)
-  const [status, setStatus] = useState<
-    'streaming' | 'ready' | 'error' | 'submitted'
-  >('ready')
-
-  const append = async (message: Message) => {
-    const mockResponse: Message = {
-      id: '5',
-      role: 'assistant',
-      parts: [{ type: 'text', text: '' }],
-    }
-    setMessages(prev => [...prev, message, mockResponse])
-
-    const mockContent =
-      'This is a mock response. In a real implementation, this would be replaced with an actual AI response.'
-
-    let streamedContent = ''
-    const words = mockContent.split(' ')
-
-    for (const word of words) {
-      await new Promise(resolve => setTimeout(resolve, 100))
-      streamedContent += (streamedContent ? ' ' : '') + word
-      setMessages(prev => {
-        return [
-          ...prev.slice(0, -1),
-          {
-            id: '6',
-            role: 'assistant',
-            parts: [{ type: 'text', text: streamedContent }],
-          },
-        ]
-      })
-    }
-
-    return mockContent
-  }
-
-  return {
-    messages,
-    status,
-    sendMessage: async (message: Message) => {
-      setStatus('submitted')
-      await append(message)
-      setStatus('ready')
-    },
-  }
+function CustomChatMessages({ messages }) {
+  return (
+    <ChatMessages>
+      <ChatMessages.List className="px-0 md:px-16">
+        <AnimatePresence>
+          {messages.map((msg, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+            >
+              <ChatMessage
+                message={msg}
+                isLast={index === messages.length - 1}
+                className="items-start"
+              >
+                <ChatMessage.Avatar>
+                  <img
+                    className="border-1 rounded-full border-[#e711dd]"
+                    alt={msg.role === 'user' ? 'User' : 'AI'}
+                    src={msg.role === 'user' ? '/user.png' : '/llama.png'}
+                  />
+                </ChatMessage.Avatar>
+                <ChatMessage.Content>
+                  <ChatMessage.Part.Markdown>
+                    {msg.content}
+                  </ChatMessage.Part.Markdown>
+                </ChatMessage.Content>
+              </ChatMessage>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </ChatMessages.List>
+    </ChatMessages>
+  )
 }
