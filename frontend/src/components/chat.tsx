@@ -3,69 +3,85 @@ import {
   ChatMessage,
   ChatMessages,
   ChatSection,
-  useChatUI,
   useFile,
-} from '@llamaindex/chat-ui'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
+} from "@llamaindex/chat-ui";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import type { Message, ChatHandler } from "@llamaindex/chat-ui";
 
 export function CustomChat() {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [status, setStatus] = useState<
+    "streaming" | "ready" | "error" | "submitted"
+  >("ready");
 
   const sendMessage = async (msg: Message) => {
-    setMessages(prev => [...prev, msg])
+    setMessages((prev) => [...prev, msg]);
+    setStatus("submitted");
 
-    const res = await fetch('http://localhost:8000/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: msg.content }),
-    })
-    const data = await res.json()
+    try {
+      const res = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: msg.parts?.[0]?.text || "" }),
+      });
 
-    const aiMsg: Message = { role: 'assistant', content: data.answer }
-    setMessages(prev => [...prev, aiMsg])
-  }
+      const data = await res.json();
 
-  const handler = {
+      const aiMsg: Message = {
+        id: Math.random().toString(),
+        role: "assistant",
+        parts: [{ type: "text", text: data.answer }],
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+      setStatus("ready");
+    } catch (err) {
+      console.error(err);
+      setStatus("error");
+    }
+  };
+
+  //handler must include `messages`, `sendMessage`, and `status`
+  const handler: ChatHandler = {
     messages,
     sendMessage,
-  }
+    status,
+  };
 
   const { image, uploadFile, reset, getAttachments } = useFile({
-    uploadAPI: 'http://localhost:8000/upload',
-  })
-
-  const attachments = getAttachments()
+    uploadAPI: "http://localhost:8000/upload",
+  });
+  const attachments = getAttachments();
 
   return (
     <ChatSection handler={handler} className="h-screen overflow-hidden p-0 md:p-5">
       <CustomChatMessages messages={messages} />
+
+      {/*No `onSubmit` here */}
       <ChatInput attachments={attachments} resetUploadedFiles={reset}>
         {image ? (
-          <img className="max-h-[100px] object-contain" src={image.url} alt="uploaded" />
+          <img
+            className="max-h-[100px] object-contain"
+            src={image.url}
+            alt="uploaded"
+          />
         ) : null}
-        <ChatInput.Form
-          onSubmit={async (value: string) => {
-            await sendMessage({ role: 'user', content: value })
-          }}
-        >
+
+        {/* Handles submission automatically using handler.sendMessage */}
+        <ChatInput.Form>
           <ChatInput.Field />
           <ChatInput.Upload
-            allowedExtensions={['jpg', 'png', 'jpeg']}
+            allowedExtensions={["jpg", "png", "jpeg"]}
             onUpload={async (file) => {
-              await uploadFile(file) // ✅ must return void
+              await uploadFile(file);
             }}
           />
           <ChatInput.Submit />
         </ChatInput.Form>
       </ChatInput>
     </ChatSection>
-  )
+  );
 }
 
 function CustomChatMessages({ messages }: { messages: Message[] }) {
@@ -89,12 +105,12 @@ function CustomChatMessages({ messages }: { messages: Message[] }) {
                 <ChatMessage.Avatar>
                   <img
                     className="border-1 rounded-full border-[#e711dd]"
-                    alt={msg.role === 'user' ? 'User' : 'AI'}
-                    src={msg.role === 'user' ? '/user.png' : '/llama.png'}
+                    alt={msg.role === "user" ? "User" : "AI"}
+                    src={msg.role === "user" ? "/user.png" : "/llama.png"}
                   />
                 </ChatMessage.Avatar>
                 <ChatMessage.Content>
-                  <ChatMessage.Part.Markdown>{msg.content}</ChatMessage.Part.Markdown>
+                  <ChatMessage.Part.Markdown />
                 </ChatMessage.Content>
               </ChatMessage>
             </motion.div>
@@ -102,5 +118,5 @@ function CustomChatMessages({ messages }: { messages: Message[] }) {
         </AnimatePresence>
       </ChatMessages.List>
     </ChatMessages>
-  )
+  );
 }
