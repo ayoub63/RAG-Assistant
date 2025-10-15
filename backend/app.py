@@ -119,7 +119,7 @@ async def upload_file(file: UploadFile = File(...)):
 # Chat Endpoint
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: dict):
-    #  Extract user text from frontend payload 
+     
     user_text = ""
     if "messages" in req:
         messages = req.get("messages", [])
