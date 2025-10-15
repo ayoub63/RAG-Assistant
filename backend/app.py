@@ -142,9 +142,16 @@ async def chat(req: dict):
     except Exception as e:
         return ChatResponse(answer=f"Vector DB error: {str(e)}", sources=[])
 
-    # Build the prompt 
+    # Build the prompt including optional rolling summary
+    summary_text = req.get("summary", "").strip()
+    system_summary_block = (
+        f"Conversation summary (may be incomplete, prefer user’s latest message):\n{summary_text}\n\n"
+        if summary_text
+        else ""
+    )
+
     prompt_text = (
-        f"Context:\n{context_text}\n\n"
+        f"{system_summary_block}Context:\n{context_text}\n\n"
         f"Question: {user_text}\n"
         f"Answer concisely with citations from the provided context."
     )

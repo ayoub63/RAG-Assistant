@@ -29,6 +29,7 @@ export function Chat({ className }: ChatProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [attachments, setAttachments] = useState<FileAttachment[]>([])
   const [docs, setDocs] = useState<BackendDoc[]>([])
+  const [summary, setSummary] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load existing PDFs on mount
@@ -69,11 +70,13 @@ export function Chat({ className }: ChatProps) {
       }
 
       // Build chat history for backend
-      const history = [...messages, newMessage].map((m) => ({
+      // Rolling window: include up to last 8 messages
+      const windowed = [...messages, newMessage].slice(-8)
+      const history = windowed.map((m) => ({
         role: m.role,
         content: m.content,
       }))
-      const resp = await apiChat(history)
+      const resp = await apiChat(history, 6, summary || undefined)
 
       const sourcesSection =
         resp.sources && resp.sources.length
@@ -88,6 +91,12 @@ export function Chat({ className }: ChatProps) {
         content: `${resp.answer}${sourcesSection}`,
       }
       setMessages((prev) => [...prev, assistantMsg])
+
+      // Update lightweight summary (very simple heuristic)
+      const latestUser = newMessage.content
+      const latestAnswer = resp.answer
+      const newSummary = `User asked: ${latestUser}\nAssistant answered: ${latestAnswer.slice(0, 500)}`
+      setSummary((prev) => (prev ? `${prev}\n\n${newSummary}` : newSummary).slice(-2000))
     } catch (err) {
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
