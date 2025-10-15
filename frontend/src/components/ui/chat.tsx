@@ -81,7 +81,7 @@ export function Chat({ className }: ChatProps) {
       const sourcesSection =
         resp.sources && resp.sources.length
           ? `\n\n---\nSources:\n${resp.sources
-              .map((s) => `- ${s.doc} (p. ${s.page})`)
+              .map((s: { doc: string; page: number }) => `- ${s.doc} (p. ${s.page})`)
               .join("\n")}`
           : ""
 
