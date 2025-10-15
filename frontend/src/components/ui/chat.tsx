@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { ChatContainerRoot, ChatContainerContent, ChatContainerScrollAnchor } from "@/components/ui/chat-container"
-import { Message, MessageActions, MessageAvatar, MessageContent } from "@/components/ui/message"
+import { Message, MessageAvatar, MessageContent } from "@/components/ui/message"
 import { PromptInput, PromptInputAction, PromptInputActions, PromptInputTextarea } from "@/components/ui/prompt-input"
 import { Button } from "@/components/ui/button"
 import { Paperclip, Send, ChevronDown } from "lucide-react"
