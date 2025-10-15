@@ -9,6 +9,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import type { Message, ChatHandler } from "@llamaindex/chat-ui";
 
+function getMessageText(msg: Message): string {
+  return msg.parts
+    .filter((p) => p.type === "text")
+    .map((p) => (p as any).text) 
+    .join("\n");
+}
+
 export function CustomChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<
@@ -23,7 +30,7 @@ export function CustomChat() {
       const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: msg.parts[0]|| "" }),
+        body: JSON.stringify({ query: getMessageText(msg) }),
       });
 
       const data = await res.json();
@@ -49,34 +56,18 @@ export function CustomChat() {
     status,
   };
 
-  const { image, uploadFile, reset, getAttachments } = useFile({
-    uploadAPI: "http://localhost:8000/upload",
-  });
-  const attachments = getAttachments();
+  // Note: Removed image upload as the backend /upload only handles PDFs.
+  // If image upload is needed, integrate a separate endpoint or adjust backend.
 
   return (
     <ChatSection handler={handler} className="h-screen overflow-hidden p-0 md:p-5">
       <CustomChatMessages messages={messages} />
 
       {/*No `onSubmit` here */}
-      <ChatInput attachments={attachments} resetUploadedFiles={reset}>
-        {image ? (
-          <img
-            className="max-h-[100px] object-contain"
-            src={image.url}
-            alt="uploaded"
-          />
-        ) : null}
-
+      <ChatInput>
         {/* Handles submission automatically using handler.sendMessage */}
         <ChatInput.Form>
           <ChatInput.Field />
-          <ChatInput.Upload
-            allowedExtensions={["jpg", "png", "jpeg"]}
-            onUpload={async (file) => {
-              await uploadFile(file);
-            }}
-          />
           <ChatInput.Submit />
         </ChatInput.Form>
       </ChatInput>
