@@ -14,6 +14,12 @@ A simple Retrieval-Augmented Generation (RAG) assistant with:
 - Rolling chat window + lightweight conversation summary sent with each query
 
 
+## Demo
+Below is a short screen recording of the app in action:
+
+<video src="public/20251020-1226-52.7592098.mp4" controls width="720"></video>
+
+
 ## Architecture
 - Backend: FastAPI (`backend/app.py`)
   - Embedding: `sentence-transformers/all-mpnet-base-v2`
