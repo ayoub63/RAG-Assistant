@@ -15,9 +15,11 @@ A simple Retrieval-Augmented Generation (RAG) assistant with:
 
 
 ## Demo
-Below is a short screen recording of the app in action:
 
-<video src="public/20251020-1226-52.7592098.mp4" height= "720" width="720"></video>
+
+[Demo video (MP4)](public/20251020-1226-52.7592098.mp4)
+
+
 
 
 ## Architecture
