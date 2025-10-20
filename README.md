@@ -16,9 +16,7 @@ A simple Retrieval-Augmented Generation (RAG) assistant with:
 
 ## Demo
 
-
-[Demo video (MP4)](public/20251020-1226-52.7592098.mp4)
-
+https://github.com/user-attachments/assets/e80b6329-6451-4260-b819-d9cfded9a799
 
 
 
